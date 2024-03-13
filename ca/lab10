@@ -1,0 +1,82 @@
+#5
+Assume that x11 is initialized to 11 and x12 is initialized to 22. Suppose you executed 
+the code below on a version of the pipeline that does not handle data hazards. What would 
+the final values of register x15 be? Assume the register file is written at the beginning 
+of the cycle and read at the end of a cycle. Therefore, an ID stage will return the 
+results of a WB state occurring during the same cycle.
+
+addi x11, x12, 5
+add  x13, x11, x12
+addi x14, x11, 15
+add  x15, x11, x11
+
+
+Init states:
+x11 is initialized to 11.
+x12 is initialized to 22.
+
+    addi x11, x12, 5
+
+This instruction adds the imm 5 to the content of x12 and stores the result in x11 => x11 = 27.
+
+    add x13, x11, x12
+  
+This instruction adds the value of x11 (27, given that the pipeline doesn't handle data hazards 
+but performs writes at the beginning and reads at the end of the cycle, allowing for the update 
+to x11 in the previous instruction to be visible here) to the value of x12 (22), storing the 
+result in x13 => x13 = 49.
+
+    addi x14, x11, 15
+
+This instruction adds the imm15 to the content of x11 (27) and stores the result in x14 => x14 = 42.
+
+    add x15, x11, x11
+
+This instruction adds the content of x11 to itself. x11 = 27 => x15 = 54.
+
+
+Considering the pipeline's behavior, the ordering guarantees that register modifications 
+inside the loop are observable by following instructions.
+
+The given description aligns with a sequential execution model, where instructions perceive 
+the outcomes of preceding instructions as they execute, reinforcing the anticipated results 
+based on sequential execution rationale.
+
+After executing the provided instructions, x15 will hold the value 54.
+
+#6
+Add NOP instructions to the code below so that it will run correctly on a pipeline that does not handle data hazards.
+
+Given code:
+
+    addi x11, x12, 5
+    add x13, x11, x12
+    addi x14, x11, 15
+    add x15, x13, x12
+
+To ensure correct execution on a pipeline without data hazard handling, we need to insert NOP 
+instructions to create delays, allowing each instruction to complete its write-back before 
+subsequent dependent instructions begin. This approach helps prevent read-after-write (RAW) hazards.
+
+result:
+1    addi x11, x12, 5
+2    NOP
+3    NOP
+4    add  x13, x11, x12
+5    addi x14, x11, 15
+6    NOP
+7    NOP
+8    add  x15, x13, x12
+
+Description:
+1) writes to x11
+2) delay slot
+3) delay slot => write to x11 is completed before it's read operation
+4) read x11 - Safe to execute. Previous write operation has finished.
+5) Proceeding without a NOP for x14 following an operation involving x11 is safe as there are no immediate dependencies on x14 in the subsequent instructions.
+6) delay slot before using x13 to ensure its value is updated.
+7) delay slot fully committed write operation
+8) It is safe to proceed with the execution.
+
+This order of operations grants each instruction sufficient time to finalize the recording of its outcomes in the register file 
+prior to the commencement of subsequent instructions, thereby diminishing data hazards in a pipeline that lacks mechanisms for handling such issues.
