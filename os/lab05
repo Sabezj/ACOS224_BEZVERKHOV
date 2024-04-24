@@ -1,0 +1,70 @@
+//Task1
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <regex.h>
+
+#define BUFFER_SIZE 1024
+
+int main() {
+    char regex_pattern[BUFFER_SIZE];
+    char text[BUFFER_SIZE];
+    char replacement[BUFFER_SIZE];
+    regex_t regex;
+    regmatch_t match;
+
+    fgets(regex_pattern, BUFFER_SIZE, stdin);
+    regex_pattern[strcspn(regex_pattern, "\n")] = 0;
+    fgets(text, BUFFER_SIZE, stdin);
+    text[strcspn(text, "\n")] = 0;
+    fgets(replacement, BUFFER_SIZE, stdin);
+    replacement[strcspn(replacement, "\n")] = 0;
+
+    if (regcomp(&regex, regex_pattern, REG_EXTENDED) != 0) {
+        return EXIT_FAILURE;
+    }
+
+    char *result = malloc(BUFFER_SIZE * sizeof(char));
+    if (!result) return EXIT_FAILURE;
+
+    result[0] = '\0';
+    size_t result_size = BUFFER_SIZE;
+    size_t result_len = 0;
+    char *current_pos = text;
+
+    while (regexec(&regex, current_pos, 1, &match, 0) == 0) {
+        size_t start = match.rm_so;
+        size_t end = match.rm_eo;
+
+        while (result_len + start + strlen(replacement) + 1 > result_size) {
+            result_size *= 2;
+            result = realloc(result, result_size);
+            if (!result) {
+                regfree(&regex);
+                return EXIT_FAILURE;
+            }
+        }
+
+        strncat(result, current_pos, start);
+        result_len += start;
+        strcat(result, replacement);
+        result_len += strlen(replacement);
+        current_pos += end;
+    }
+
+    strcat(result, current_pos);
+    printf("%s\n", result);
+    free(result);
+    regfree(&regex);
+
+    return EXIT_SUCCESS;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Sample
+//Input:
+//Fe
+//Fe + SO4 = NaSO4
+//Na
+//Output:
+//Na + SO4 = NaSO4
